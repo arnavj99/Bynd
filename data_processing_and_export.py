@@ -22,6 +22,13 @@ def fetch_selected_metrics(ticker, selected_metrics, dataframes, metrics_mapping
         # Check if the value is a number and greater than 1000
         if isinstance(value, (int, float)) and value > 100000:
             value /= 1e6  # Convert to millions
+        elif isinstance(value, str):  # Check if the value is a string
+            try:
+                value = float(value)  # Try converting the string to a float
+                if value > 100000:
+                  value /= 1e6  # Convert to millions
+            except ValueError:
+                pass  # Ignore if the string cannot be converted to a float
         data.loc[ticker, metric] = value  # Assume the most recent data is needed
     return data
 
