@@ -1,6 +1,6 @@
 # Import necessary libraries
 import pandas as pd
-from openbb_terminal.api import openbb
+from openbb_terminal.sdk import openbb
 
 # Set up API key for openbb
 def setup_openbb_key():

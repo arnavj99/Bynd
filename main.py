@@ -1,7 +1,8 @@
 from init_setup import setup_openbb_key
 from data_retrieval import get_dataframes
 from user_input import get_user_inputs, validate_input
-from data_processing_export import get_available_metrics, create_metrics_mapping, fetch_selected_metrics, generate_excel
+import pandas as pd
+from data_processing_and_export import get_available_metrics, create_metrics_mapping, fetch_selected_metrics, generate_excel
 
 def main():
     setup_openbb_key()

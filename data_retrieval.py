@@ -1,5 +1,5 @@
 import pandas as pd
-from openbb_terminal.api import openbb
+from openbb_terminal.sdk import openbb
 
 def get_dataframes(ticker):
     # Data Fetching
