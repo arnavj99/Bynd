@@ -1,11 +1,8 @@
 import asyncio
-
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
-
 import nest_asyncio
 nest_asyncio.apply()
-
 import pandas as pd
 import streamlit as st
 from init_setup import setup_openbb_key

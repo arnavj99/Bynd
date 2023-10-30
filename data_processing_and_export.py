@@ -1,4 +1,7 @@
 import pandas as pd
+import openpyxl
+from openpyxl.utils.cell import get_column_letter
+from openpyxl.styles import PatternFill, Font
 
 def get_available_metrics(dataframes):
     metrics = set()  # Use a set to avoid duplicate metrics
@@ -33,14 +36,25 @@ def fetch_selected_metrics(ticker, selected_metrics, dataframes, metrics_mapping
     return data
 
 def generate_excel(data, file_name='comparative_analysis.xlsx'):
-    # Export DataFrame to Excel File
+    # Export the DataFrame to an Excel file
     with pd.ExcelWriter(file_name, engine='openpyxl') as writer:
         data.to_excel(writer)
+        # Reference to the active worksheet (assuming it's the one just written)
+        worksheet = writer.sheets['Sheet1']
+        # Iterate through columns and set format
         for column in data.columns:
-            numeric_data = pd.to_numeric(data[column], errors='coerce').dropna()
-            if (numeric_data <= 1).all():  # Check if all values in the column are less than or equal to 1
-                col_num = data.columns.get_loc(column) + 1  # +1 because Excel uses 1-indexing
+            col_letter = openpyxl.utils.cell.get_column_letter(data.columns.get_loc(column) + 1)
+            # Set cell format to percentage if all values are less than or equal to 1
+            if (data[column] <= 1).all():
                 for row_num in range(2, len(data) + 2):  # +2 because Excel uses 1-indexing and there's a header row
-                    cell = writer.sheets['Sheet1'].cell(row=row_num, column=col_num)
+                    cell = worksheet.cell(row=row_num, column=data.columns.get_loc(column) + 1)
                     cell.number_format = '0.00%'
+            # Autosize the column
+            worksheet.column_dimensions[col_letter].auto_size = True
+        # Format header row (assuming header is in row 1)
+        for cell in worksheet["1:1"]:
+            cell.fill = openpyxl.styles.PatternFill(start_color="000080", end_color="000080", fill_type="solid")
+            cell.font = openpyxl.styles.Font(bold=True, color="FFFFFF")
+        # Save changes to the Excel file
+        writer.save()
     print(f'Data exported to {file_name}')
