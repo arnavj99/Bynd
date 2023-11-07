@@ -50,6 +50,9 @@ def generate_excel(data, file_name='comparative_analysis.xlsx'):
         # Iterate through columns and set format
         for column in data.columns:
             col_letter = openpyxl.utils.cell.get_column_letter(data.columns.get_loc(column) + 1)
+            # Skip columns with Timestamp objects
+            if pd.api.types.is_datetime64_any_dtype(data[column]):
+                continue
             # Set cell format to percentage if all values are less than or equal to 1
             if (data[column] <= 1).all():
                 for row_num in range(2, len(data) + 2):  # +2 because Excel uses 1-indexing and there's a header row
