@@ -1,10 +1,16 @@
 import pandas as pd
 
 def get_available_metrics(dataframes):
-    metrics = set()  # Use a set to avoid duplicate metrics
+    metrics = set()
     for df in dataframes:
-        metrics.update(df.index.tolist())
-    return list(metrics) # Convert to list and sort for a consistent order
+        # This print statement is for debugging purposes
+        print(f"Currently processing: {df}, Type: {type(df)}")
+        # Ensure that df is a pandas DataFrame or Series
+        if isinstance(df, (pd.DataFrame, pd.Series)):
+            metrics.update(df.index.tolist())
+        else:
+            print(f"Error: Object {df} is not a pandas DataFrame or Series.")
+    return list(metrics)
 
 def create_metrics_mapping(dataframes):
     metrics_mapping = {}

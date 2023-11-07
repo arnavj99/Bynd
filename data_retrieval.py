@@ -1,6 +1,7 @@
 import pandas as pd
 from openbb_terminal.sdk import openbb
 
+
 def get_dataframes(ticker):
     # Data Fetching
     cash_flow = openbb.stocks.fa.cash(symbol=ticker)
