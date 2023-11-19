@@ -25,21 +25,27 @@ def create_metrics_mapping(dataframes):
 def fetch_selected_metrics(ticker, selected_metrics, dataframes, metrics_mapping):
     data = pd.DataFrame(index=[ticker], columns=selected_metrics)  # Initialize DataFrame with ticker as index and metrics as columns
     for metric in selected_metrics:
-        df_name = metrics_mapping[metric]
-        df = dataframes[df_name]
-        value = df.loc[metric].values[0]
-        # Check if the value is a number and greater than 1000
-        if isinstance(value, (int, float)) and value > 100000:
-            value /= 1e6  # Convert to millions
-        elif isinstance(value, str):  # Check if the value is a string
-            try:
-                value = float(value)  # Try converting the string to a float
-                if value > 100000:
-                  value /= 1e6  # Convert to millions
-            except ValueError:
-                pass  # Ignore if the string cannot be converted to a float
+        if metric in metrics_mapping:
+            df_name = metrics_mapping[metric]
+            df = dataframes[df_name]
+            if metric in df.index:
+                value = df.loc[metric].values[0]
+                # Check if the value is a number and greater than 1000
+                if isinstance(value, (int, float)) and value > 100000:
+                    value /= 1e6  # Convert to millions
+                elif isinstance(value, str):  # Check if the value is a string
+                    try:
+                        value = float(value)  # Try converting the string to a float
+                        if value > 100000:
+                            value /= 1e6  # Convert to millions
+                    except ValueError:
+                        pass  # Ignore if the string cannot be converted to a float
+            else:
+                value = pd.NA  # Fill with NA if the metric is not in the DataFrame
+        else:
+            value = pd.NA  # Fill with NA if the metric is not in the metrics_mapping
         data.loc[ticker, metric] = value  # Assume the most recent data is needed
-    return data
+    return data.reset_index().rename(columns={'index': 'ticker'})
 
 def generate_excel(data, file_name='comparative_analysis.xlsx'):
     # Export the DataFrame to an Excel file
@@ -54,7 +60,7 @@ def generate_excel(data, file_name='comparative_analysis.xlsx'):
             if pd.api.types.is_datetime64_any_dtype(data[column]):
                 continue
             # Set cell format to percentage if all values are less than or equal to 1
-            if (data[column] <= 1).all():
+            if pd.api.types.is_numeric_dtype(data[column]) and (data[column] <= 1).all():
                 for row_num in range(2, len(data) + 2):  # +2 because Excel uses 1-indexing and there's a header row
                     cell = worksheet.cell(row=row_num, column=data.columns.get_loc(column) + 1)
                     cell.number_format = '0.00%'

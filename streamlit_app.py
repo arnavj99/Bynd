@@ -124,11 +124,18 @@ def next_page():
         st.write('No companies selected.')
 
     # Fetch available metrics for the first company (as a proxy for all companies)
-    available_metrics = []
-    if st.session_state.selected_companies:
+    # Instead of fetching each time store the metrics in a local db
+    conn = sqlite3.connect('metrics_db.sqlite')
+    cursor = conn.cursor()
+    cursor.execute("CREATE TABLE IF NOT EXISTS metrics (name TEXT)")
+    cursor.execute("SELECT name FROM metrics")
+    available_metrics = [metric[0] for metric in cursor.fetchall()]  # Unpack the tuple to get the metric name
+    if not available_metrics and st.session_state.selected_companies:
         df_for_metrics = get_dataframes(st.session_state.selected_companies[0]['ticker'])
         available_metrics = get_available_metrics(df_for_metrics.values())
-
+        cursor.executemany("INSERT INTO metrics VALUES (?)", [(metric,) for metric in available_metrics])
+        conn.commit()
+    conn.close()
     # Getting user input for metrics using multiselect
     selected_metrics = st.multiselect('Select the financial metrics:', available_metrics)
 
@@ -141,6 +148,17 @@ def next_page():
         all_data = pd.DataFrame()
         for company in st.session_state.selected_companies:
             dataframes = get_dataframes(company['ticker'])
+            if not dataframes:  # Check if dataframes is empty
+                st.error(f"Error fetching data for ticker {company['ticker']}. Filling with blank values.")
+                # Create an empty DataFrame with the same structure as the successful ones
+                dataframes = {
+                    'cash_flow': pd.DataFrame(),
+                    'income': pd.DataFrame(),
+                    'balance': pd.DataFrame(),
+                    'growth_ratios': pd.DataFrame(),
+                    'ratios': pd.DataFrame(),
+                    'keyMetrics': pd.DataFrame()
+                }
             metrics_mapping = create_metrics_mapping(dataframes)
             company_data = fetch_selected_metrics(company['ticker'], selected_metrics, dataframes, metrics_mapping)
             all_data = pd.concat([all_data, company_data])
