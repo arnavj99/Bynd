@@ -31,7 +31,7 @@ def fetch_selected_metrics(ticker, selected_metrics, dataframes, metrics_mapping
             if metric in df.index:
                 value = df.loc[metric].values[0]
                 # Check if the value is a number and greater than 1000
-                if isinstance(value, (int, float)) and value > 100000:
+                if isinstance(value, (int, float)) and (value > 100000 or value < -100000):
                     value /= 1e6  # Convert to millions
                 elif isinstance(value, str):  # Check if the value is a string
                     try:
@@ -47,29 +47,35 @@ def fetch_selected_metrics(ticker, selected_metrics, dataframes, metrics_mapping
         data.loc[ticker, metric] = value  # Assume the most recent data is needed
     return data.reset_index().rename(columns={'index': 'ticker'})
 
+def set_cell_format(worksheet, data, column):
+    col_letter = openpyxl.utils.cell.get_column_letter(data.columns.get_loc(column) + 1)
+    if pd.api.types.is_numeric_dtype(data[column]) and (data[column] <= 1).all():
+        for row_num in range(2, len(data) + 2):
+            cell = worksheet.cell(row=row_num, column=data.columns.get_loc(column) + 1)
+            cell.number_format = '0.00%'
+    return worksheet
+
+def autosize_column(worksheet, data, column):
+    col_letter = openpyxl.utils.cell.get_column_letter(data.columns.get_loc(column) + 1)
+    max_length = max(len(item) for item in data[column].astype(str))
+    worksheet.column_dimensions[col_letter].width = max_length + 2
+    return worksheet
+
+def format_header_row(worksheet):
+    for cell in worksheet["1:1"]:
+        cell.fill = openpyxl.styles.PatternFill(start_color="1F497D", end_color="1F497D", fill_type="solid")
+        cell.font = openpyxl.styles.Font(bold=True, color="FFFFFF")
+        cell.value = cell.value.title()
+    return worksheet
+
 def generate_excel(data, file_name='comparative_analysis.xlsx'):
-    # Export the DataFrame to an Excel file
     with pd.ExcelWriter(file_name, engine='openpyxl') as writer:
         data.to_excel(writer)
-        # Reference to the active worksheet (assuming it's the one just written)
         worksheet = writer.sheets['Sheet1']
-        # Iterate through columns and set format
         for column in data.columns:
-            col_letter = openpyxl.utils.cell.get_column_letter(data.columns.get_loc(column) + 1)
-            # Skip columns with Timestamp objects
-            if pd.api.types.is_datetime64_any_dtype(data[column]):
-                continue
-            # Set cell format to percentage if all values are less than or equal to 1
-            if pd.api.types.is_numeric_dtype(data[column]) and (data[column] <= 1).all():
-                for row_num in range(2, len(data) + 2):  # +2 because Excel uses 1-indexing and there's a header row
-                    cell = worksheet.cell(row=row_num, column=data.columns.get_loc(column) + 1)
-                    cell.number_format = '0.00%'
-            # Autosize the column
-            worksheet.column_dimensions[col_letter].auto_size = True
-        # Format header row (assuming header is in row 1)
-        for cell in worksheet["1:1"]:
-            cell.fill = openpyxl.styles.PatternFill(start_color="000080", end_color="000080", fill_type="solid")
-            cell.font = openpyxl.styles.Font(bold=True, color="FFFFFF")
-        # Save changes to the Excel file
+            if not pd.api.types.is_datetime64_any_dtype(data[column]):
+                worksheet = set_cell_format(worksheet, data, column)
+                worksheet = autosize_column(worksheet, data, column)
+        worksheet = format_header_row(worksheet)
         writer.save()
     print(f'Data exported to {file_name}')

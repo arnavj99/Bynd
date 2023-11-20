@@ -36,7 +36,7 @@ def execute_query(conn, query):
     print(query_result)
 
 conn = create_and_load_db()
-openai.api_key = ''
+openai.api_key = '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'
 
 llm = OpenAI(temperature=0, model="gpt-4")
 engine = create_engine('sqlite:///company_info.db')
