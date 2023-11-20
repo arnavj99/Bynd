@@ -22,29 +22,37 @@ def create_metrics_mapping(dataframes):
             metrics_mapping[metric] = df_name
     return metrics_mapping
 
-def fetch_selected_metrics(ticker, selected_metrics, dataframes, metrics_mapping):
-    data = pd.DataFrame(index=[ticker], columns=selected_metrics)  # Initialize DataFrame with ticker as index and metrics as columns
+def fetch_selected_metrics(ticker, selected_metrics, dataframes, metrics_mapping, years):
+    data = pd.DataFrame(index=[ticker], columns=[f"{metric}_{year}" for year in range(1, years+1) for metric in selected_metrics])  # Initialize DataFrame with ticker as index and metrics as columns
     for metric in selected_metrics:
         if metric in metrics_mapping:
             df_name = metrics_mapping[metric]
             df = dataframes[df_name]
             if metric in df.index:
-                value = df.loc[metric].values[0]
-                # Check if the value is a number and greater than 1000
-                if isinstance(value, (int, float)) and (value > 100000 or value < -100000):
-                    value /= 1e6  # Convert to millions
-                elif isinstance(value, str):  # Check if the value is a string
+                for year in range(1, years+1):
                     try:
-                        value = float(value)  # Try converting the string to a float
-                        if value > 100000:
-                            value /= 1e6  # Convert to millions
-                    except ValueError:
-                        pass  # Ignore if the string cannot be converted to a float
+                        value = df.loc[metric].values[-year]  # Get the value for the specified year
+                    except IndexError:
+                        value = pd.NA  # Fill with NA if the data for the year is not available
+
+                    # Check if the value is a number and greater than 1000
+                    if isinstance(value, (int, float)) and (value > 100000 or value < -100000):
+                        value /= 1e6  # Convert to millions
+                    elif isinstance(value, str):  # Check if the value is a string
+                        try:
+                            value = float(value)  # Try converting the string to a float
+                            if value > 100000:
+                                value /= 1e6  # Convert to millions
+                        except ValueError:
+                            pass  # Ignore if the string cannot be converted to a float
+
+                    data.loc[ticker, f"{metric}_{year}"] = value  # Store the value in the DataFrame
             else:
-                value = pd.NA  # Fill with NA if the metric is not in the DataFrame
+                for year in range(1, years+1):
+                    data.loc[ticker, f"{metric}_{year}"] = pd.NA  # Fill with NA if the metric is not in the DataFrame
         else:
-            value = pd.NA  # Fill with NA if the metric is not in the metrics_mapping
-        data.loc[ticker, metric] = value  # Assume the most recent data is needed
+            for year in range(1, years+1):
+                data.loc[ticker, f"{metric}_{year}"] = pd.NA  # Fill with NA if the metric is not in the metrics_mapping
     return data.reset_index().rename(columns={'index': 'ticker'})
 
 def set_cell_format(worksheet, data, column):

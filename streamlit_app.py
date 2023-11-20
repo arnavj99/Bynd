@@ -139,6 +139,9 @@ def next_page():
     # Getting user input for metrics using multiselect
     selected_metrics = st.multiselect('Select the financial metrics:', available_metrics)
 
+    # Get the number of years from the user
+    years = st.number_input('Number of years', min_value=1, max_value=10, value=1, step=1)
+
     # Button to process the data
     if st.button("Fetch Data and Generate Excel"):
         if not st.session_state.selected_companies or not selected_metrics:
@@ -160,7 +163,7 @@ def next_page():
                     'keyMetrics': pd.DataFrame()
                 }
             metrics_mapping = create_metrics_mapping(dataframes)
-            company_data = fetch_selected_metrics(company['ticker'], selected_metrics, dataframes, metrics_mapping)
+            company_data = fetch_selected_metrics(company['ticker'], selected_metrics, dataframes, metrics_mapping, years)
             all_data = pd.concat([all_data, company_data])
 
         # Export data to Excel
