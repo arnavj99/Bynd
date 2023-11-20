@@ -34,7 +34,6 @@ def fetch_selected_metrics(ticker, selected_metrics, dataframes, metrics_mapping
                         value = df.loc[metric].values[-year]  # Get the value for the specified year
                     except IndexError:
                         value = pd.NA  # Fill with NA if the data for the year is not available
-
                     # Check if the value is a number and greater than 1000
                     if isinstance(value, (int, float)) and (value > 100000 or value < -100000):
                         value /= 1e6  # Convert to millions
