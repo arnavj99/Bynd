@@ -1,5 +1,6 @@
 import pandas as pd
 import openpyxl
+import numpy as np
 from openpyxl.utils.cell import get_column_letter
 from openpyxl.styles import PatternFill, Font
 
@@ -23,36 +24,47 @@ def create_metrics_mapping(dataframes):
     return metrics_mapping
 
 def fetch_selected_metrics(ticker, selected_metrics, dataframes, metrics_mapping, years):
-    data = pd.DataFrame(index=[ticker], columns=[f"{metric}_{year}" for year in range(1, years+1) for metric in selected_metrics])  # Initialize DataFrame with ticker as index and metrics as columns
+    # Initialize DataFrame with ticker as index and metrics as columns
+    data = pd.DataFrame(index=[ticker], columns=[f"{metric}_{'TTM' if year == 0 else 2023 - year}" for year in range(years) for metric in selected_metrics])
     for metric in selected_metrics:
         if metric in metrics_mapping:
             df_name = metrics_mapping[metric]
             df = dataframes[df_name]
             if metric in df.index:
-                for year in range(1, years+1):
+                print(df.loc[metric])
+                values = df.loc[metric].values
+                values = np.concatenate([values[:1], values[2:]])  # Exclude the 2023 data
+                for year in range(years):
                     try:
-                        value = df.loc[metric].values[-year]  # Get the value for the specified year
+                        value = values[year]  # Get the value for the specified year
                     except IndexError:
                         value = pd.NA  # Fill with NA if the data for the year is not available
 
-                    # Check if the value is a number and greater than 1000
-                    if isinstance(value, (int, float)) and value > 100000:
-                        value /= 1e6  # Convert to millions
-                    elif isinstance(value, str):  # Check if the value is a string
-                        try:
-                            value = float(value)  # Try converting the string to a float
-                            if value > 100000:
-                                value /= 1e6  # Convert to millions
-                        except ValueError:
-                            pass  # Ignore if the string cannot be converted to a float
+                    # Define column name based on the year
+                    if year == 0:
+                        column_name = f"{metric}_TTM"
+                    else:
+                        column_name = f"{metric}_{2023-year}"
 
-                    data.loc[ticker, f"{metric}_{year}"] = value  # Store the value in the DataFrame
+                    data.loc[ticker, column_name] = value  # Store the value in the DataFrame
             else:
-                for year in range(1, years+1):
-                    data.loc[ticker, f"{metric}_{year}"] = pd.NA  # Fill with NA if the metric is not in the DataFrame
+                for year in range(years):
+                    # Define column name based on the year
+                    if year == 0:
+                        column_name = f"{metric}_TTM"
+                    else:
+                        column_name = f"{metric}_{2023-year}"
+
+                    data.loc[ticker, column_name] = pd.NA  # Fill with NA if the metric is not in the DataFrame
         else:
-            for year in range(1, years+1):
-                data.loc[ticker, f"{metric}_{year}"] = pd.NA  # Fill with NA if the metric is not in the metrics_mapping
+            for year in range(years):
+                # Define column name based on the year
+                if year == 0:
+                    column_name = f"{metric}_TTM"
+                else:
+                    column_name = f"{metric}_{2023-year}"
+
+                data.loc[ticker, column_name] = pd.NA  # Fill with NA if the metric is not in the metrics_mapping
     return data.reset_index().rename(columns={'index': 'ticker'})
 
 def generate_excel(data, file_name='comparative_analysis.xlsx'):

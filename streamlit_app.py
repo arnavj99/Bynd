@@ -150,8 +150,9 @@ def next_page():
 
         all_data = pd.DataFrame()
         for company in st.session_state.selected_companies:
+            print(f"Fetching data for {company['ticker']}...")  # Debug print
             dataframes = get_dataframes(company['ticker'])
-            if not dataframes:  # Check if dataframes is empty
+            if not dataframes:  # Check if dataframes is empty 
                 st.error(f"Error fetching data for ticker {company['ticker']}. Filling with blank values.")
                 # Create an empty DataFrame with the same structure as the successful ones
                 dataframes = {
@@ -165,6 +166,8 @@ def next_page():
             metrics_mapping = create_metrics_mapping(dataframes)
             company_data = fetch_selected_metrics(company['ticker'], selected_metrics, dataframes, metrics_mapping, years)
             all_data = pd.concat([all_data, company_data])
+
+        print("Data fetched. Generating Excel file...")
 
         # Export data to Excel
         file_name = "comparative_analysis.xlsx"
