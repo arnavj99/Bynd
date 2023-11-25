@@ -45,13 +45,14 @@ def fetch_selected_metrics(ticker, selected_metrics, dataframes, metrics_mapping
                         column_name = f"{metric}_TTM"
                     else:
                         column_name = f"{metric}_{2023-year}"
+                        
                     # Check if the value is a number and greater than 1000
-                    if isinstance(value, (int, float)) and (value > 100000 or value < -100000):
+                    if isinstance(value, (int, float)) and abs(value) > 100000:
                         value /= 1e6  # Convert to millions
                     elif isinstance(value, str):  # Check if the value is a string
                         try:
                             value = float(value)  # Try converting the string to a float
-                            if value > 100000:
+                            if abs(value) > 100000:
                                 value /= 1e6  # Convert to millions
                         except ValueError:
                             pass  # Ignore if the string cannot be converted to a float
